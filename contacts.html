@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#C04000">
+<title>Contacts — मारवाड़ रसोई</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDXHFpqnMj0d6vp_Ns6sIqb4QHQD6Nb8Io",
+    authDomain: "marwar-rasoi-ea8c1.firebaseapp.com",
+    projectId: "marwar-rasoi-ea8c1",
+    storageBucket: "marwar-rasoi-ea8c1.firebasestorage.app",
+    messagingSenderId: "894746484842",
+    appId: "1:894746484842:web:535b16cef989d48a612a13"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  const MAIN_DOC     = doc(db, "marwar_rasoi", "main_data");
+  const CONTACTS_DOC = doc(db, "marwar_rasoi", "contacts_data");
+
+  // Save contacts permanently (separate document)
+  window.fbSaveContacts = async function(contacts) {
+    try {
+      await setDoc(CONTACTS_DOC, { contacts: JSON.stringify(contacts), updated: Date.now() });
+    } catch(e) { console.error("Contacts save error:", e); }
+  };
+
+  // Load contacts permanently
+  window.fbLoadContacts = async function() {
+    try {
+      const snap = await getDoc(CONTACTS_DOC);
+      if (snap.exists()) return JSON.parse(snap.data().contacts || '[]');
+    } catch(e) { console.error("Contacts load error:", e); }
+    return [];
+  };
+
+  // Load main app data (bills, customers)
+  window.fbLoadMain = async function() {
+    try {
+      const snap = await getDoc(MAIN_DOC);
+      if (snap.exists()) return JSON.parse(snap.data().payload || '{}');
+    } catch(e) { console.error("Main load error:", e); }
+    return null;
+  };
+
+  // Save main data (to update customers from contacts page)
+  window.fbSaveMain = async function(data) {
+    try {
+      await setDoc(MAIN_DOC, { payload: JSON.stringify(data), updated: Date.now() });
+    } catch(e) { console.error("Main save error:", e); }
+  };
+
+  // Real-time sync
+  window.fbSync = function(cb) {
+    onSnapshot(CONTACTS_DOC, snap => {
+      if (snap.exists() && !snap.metadata.hasPendingWrites) {
+        try { cb(JSON.parse(snap.data().contacts || '[]')); } catch(e) {}
+      }
+    });
+  };
+
+  window.firebaseReady = true;
+  document.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<style>
+:root {
+  --saffron:#E85D04; --deep:#C04000; --cream:#FFF8E7;
+  --ink:#2B1810; --soft:#5C3A21; --muted:#8a7158;
+  --gold:#D4A017; --green:#2D6A4F; --green-l:#52B788;
+  --red:#9D0208; --border:#E6D5B8; --line:#F0E4CC;
+  --bg:#FDF6E3; --shadow:rgba(80,40,10,0.10);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding-bottom:80px;font-size:15px}
+
+.header{
+  background:linear-gradient(135deg,var(--deep),var(--saffron));
+  color:var(--cream);padding:14px;
+  position:sticky;top:0;z-index:50;
+  box-shadow:0 2px 12px var(--shadow);
+}
+.header-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.header h1{font-size:18px;font-weight:600}
+.header p{font-size:11px;opacity:0.85;margin-top:1px}
+.back-btn{
+  width:36px;height:36px;background:rgba(255,255,255,0.15);
+  border:1px solid rgba(255,255,255,0.25);color:#fff;
+  border-radius:9px;font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;
+}
+
+.main{max-width:720px;margin:0 auto;padding:12px}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}
+.stat-v{font-size:20px;font-weight:700;color:var(--deep)}
+.stat-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
+
+/* Search */
+.search-wrap{position:relative;margin-bottom:10px}
+.search-wrap input{
+  width:100%;padding:11px 12px 11px 38px;
+  border:1.5px solid var(--border);border-radius:9px;
+  font-family:inherit;font-size:15px;background:#fff;
+}
+.search-wrap input:focus{outline:none;border-color:var(--saffron)}
+.search-wrap::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px}
+
+/* Filter pills */
+.pills{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px;padding:2px}
+.pills::-webkit-scrollbar{display:none}
+.pill{
+  flex-shrink:0;padding:6px 14px;border:1px solid var(--border);
+  background:#fff;border-radius:16px;font-size:12px;font-weight:500;
+  color:var(--soft);cursor:pointer;white-space:nowrap;
+}
+.pill.active{background:var(--deep);color:#fff;border-color:var(--deep)}
+
+/* Contact card */
+.contact{
+  background:#fff;border:1px solid var(--border);
+  border-radius:12px;padding:12px;margin-bottom:8px;
+  position:relative;
+}
+.contact.has-udhari{border-left:4px solid var(--red)}
+.contact.vip{border-left:4px solid var(--gold)}
+.contact-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.contact-phone{font-size:15px;font-weight:700;color:var(--ink)}
+.contact-name{font-size:12px;color:var(--muted);margin-top:2px}
+.contact-loc{font-size:12px;color:var(--soft);margin-top:2px}
+.contact-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.tag{
+  display:inline-block;padding:2px 8px;border-radius:10px;
+  font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;
+}
+.tag-red{background:#FFD6D6;color:var(--red)}
+.tag-gold{background:#FFF3D6;color:#8a6d00}
+.tag-green{background:#D8F3DC;color:var(--green)}
+.tag-grey{background:#EEE5D6;color:var(--soft)}
+
+.contact-actions{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);flex-wrap:wrap}
+
+/* Buttons */
+.btn{
+  background:var(--saffron);color:#fff;border:none;padding:9px 14px;
+  border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:38px;
+}
+.btn:active{transform:scale(0.97)}
+.btn-green{background:var(--green)}
+.btn-ghost{background:var(--cream);color:var(--soft);border:1px solid var(--border)}
+.btn-red{background:var(--red)}
+.btn-gold{background:var(--gold);color:var(--ink)}
+.btn-block{width:100%}
+.btn-sm{padding:6px 10px;font-size:12px;min-height:32px;border-radius:7px}
+.btn-xs{padding:4px 8px;font-size:11px;min-height:26px;border-radius:6px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-row .btn{flex:1;min-width:0}
+
+/* Card */
+.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);box-shadow:0 1px 6px var(--shadow)}
+.card-title{font-size:15px;font-weight:600;color:var(--deep);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.field{margin-bottom:10px}
+.label{display:block;font-size:11px;font-weight:600;color:var(--soft);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px}
+.input,.select{
+  width:100%;padding:11px 12px;border:1.5px solid var(--border);
+  border-radius:9px;font-family:inherit;font-size:15px;background:#fff;
+  -webkit-appearance:none;min-height:44px;
+}
+.input:focus,.select:focus{outline:none;border-color:var(--saffron)}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(2px)}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:18px 18px 0 0;padding:20px 16px 28px;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;position:relative}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 12px}
+.modal-title{font-size:18px;font-weight:600;color:var(--deep);margin-bottom:14px;padding-right:30px}
+.modal-close{position:absolute;top:14px;right:14px;width:32px;height:32px;background:var(--cream);border:1px solid var(--border);border-radius:50%;font-size:18px;cursor:pointer;color:var(--soft)}
+@media(min-width:600px){.modal-bg{align-items:center;padding:14px}.modal{border-radius:18px;max-width:520px}}
+
+/* Toast */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--cream);padding:11px 18px;border-radius:10px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:all 0.3s;z-index:300;max-width:90%;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.empty{text-align:center;padding:30px 16px;color:var(--muted);font-size:14px}
+.big-icon{font-size:40px;margin-bottom:8px;opacity:0.6}
+.mt-1{margin-top:4px}.mt-2{margin-top:8px}.mt-3{margin-top:12px}
+.text-sm{font-size:13px}.text-xs{font-size:11px}.text-muted{color:var(--muted)}
+.text-red{color:var(--red)}.text-green{color:var(--green)}
+.mono{font-family:monospace;font-variant-numeric:tabular-nums}
+
+/* Section heading */
+.sec-head{font-size:13px;font-weight:700;color:var(--deep);text-transform:uppercase;letter-spacing:0.5px;margin:16px 2px 8px;display:flex;align-items:center;gap:6px}
+
+/* Udhari badge */
+.udhari-badge{background:#FFD6D6;color:var(--red);padding:3px 8px;border-radius:8px;font-size:12px;font-weight:700;white-space:nowrap}
+
+/* Import result */
+#import-result{font-size:12px;padding:6px;border-radius:6px}
+
+/* Loading */
+.loading{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-row">
+    <a href="index.html" class="back-btn">←</a>
+    <div style="flex:1">
+      <h1>📞 Contacts</h1>
+      <p>मारवाड़ रसोई — ग्राहक व उधारी</p>
+    </div>
+    <button class="back-btn" onclick="openAddModal()" title="नया contact">➕</button>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-v" id="st-total">0</div>
+      <div class="stat-l">कुल Contacts</div>
+    </div>
+    <div class="stat">
+      <div class="stat-v text-red" id="st-udhari">0</div>
+      <div class="stat-l">उधारी बाकी</div>
+    </div>
+    <div class="stat">
+      <div class="stat-v text-green" id="st-phone">0</div>
+      <div class="stat-l">फोन वाले</div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <input type="text" id="search-input" placeholder="नाम, फोन, जगह से खोजें..." oninput="renderContacts()">
+  </div>
+
+  <!-- Filter -->
+  <div class="pills">
+    <button class="pill active" data-f="all" onclick="setFilter('all')">सभी</button>
+    <button class="pill" data-f="udhari" onclick="setFilter('udhari')">💰 उधारी</button>
+    <button class="pill" data-f="vip" onclick="setFilter('vip')">⭐ VIP</button>
+    <button class="pill" data-f="phone" onclick="setFilter('phone')">📞 फोन वाले</button>
+  </div>
+
+  <!-- Import from App -->
+  <div class="card">
+    <div class="card-title">🔄 App से Sync करें</div>
+    <p class="text-xs text-muted" style="margin-bottom:8px">App के सभी ग्राहक + उधारी वाले यहाँ आ जाएंगे</p>
+    <div class="btn-row">
+      <button class="btn btn-green" onclick="syncFromApp()">📥 App से Import</button>
+      <button class="btn btn-ghost" onclick="syncToApp()">📤 App में Export</button>
+    </div>
+    <div id="sync-result" class="text-xs mt-2"></div>
+  </div>
+
+  <!-- CSV Import -->
+  <div class="card">
+    <div class="card-title">📥 CSV Import</div>
+    <p class="text-xs text-muted" style="margin-bottom:8px">
+      Format: <span class="mono" style="font-size:10px">Name, Phone, Address</span><br>
+      Phone contacts CSV यहाँ भी काम करेगी
+    </p>
+    <div class="field">
+      <input type="file" class="input" id="csv-file" accept=".csv" style="padding:8px">
+    </div>
+    <button class="btn btn-block" onclick="importCSV()">📥 Import करें</button>
+    <div id="import-result" class="mt-2"></div>
+  </div>
+
+  <!-- Contacts list -->
+  <div id="contacts-loading" class="loading">
+    <div style="font-size:32px;margin-bottom:8px">⏳</div>
+    Loading contacts...
+  </div>
+  <div id="contacts-list" style="display:none"></div>
+
+</main>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-bg" id="add-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-title" id="modal-title">➕ नया Contact</div>
+
+    <input type="hidden" id="edit-id">
+    <div class="field">
+      <label class="label">नाम *</label>
+      <input type="text" class="input" id="c-name" placeholder="ग्राहक का नाम">
+    </div>
+    <div class="field">
+      <label class="label">फोन</label>
+      <input type="tel" class="input" id="c-phone" placeholder="9876543210" maxlength="10">
+    </div>
+    <div class="field">
+      <label class="label">पता / जगह</label>
+      <input type="text" class="input" id="c-address" placeholder="जलिपा कैंट, बाड़मेर...">
+    </div>
+    <div class="field">
+      <label class="label">नोट</label>
+      <input type="text" class="input" id="c-note" placeholder="कोई जानकारी">
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;margin-bottom:10px">
+      <input type="checkbox" id="c-vip" style="width:20px;height:20px;accent-color:var(--saffron)">
+      <label for="c-vip" style="font-size:14px;color:var(--soft)">⭐ VIP ग्राहक</label>
+    </div>
+    <button class="btn btn-block" onclick="saveContact()">💾 सेव करें</button>
+  </div>
+</div>
+
+<!-- UDHARI MODAL -->
+<div class="modal-bg" id="udhari-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeUdhariModal()">×</button>
+    <div class="modal-title" id="udhari-modal-title">💰 उधारी</div>
+    <div id="udhari-modal-content"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">...</div>
+
+<script>
+// ============ STATE ============
+let CONTACTS = [];      // permanent contact book
+let APP_DATA  = null;   // live app data (bills, customers)
+let currentFilter = 'all';
+let editingId = null;
+
+// ============ INIT ============
+document.addEventListener('firebase-ready', async () => {
+  CONTACTS  = await fbLoadContacts();
+  APP_DATA  = await fbLoadMain();
+  
+  document.getElementById('contacts-loading').style.display = 'none';
+  document.getElementById('contacts-list').style.display = 'block';
+  
+  // Auto-merge udhari people into contacts (read-only display)
+  mergeUdhariIntoView();
+  renderContacts();
+  
+  // Real-time sync
+  fbSync(data => {
+    CONTACTS = data;
+    mergeUdhariIntoView();
+    renderContacts();
+  });
+});
+
+// ============ MERGE UDHARI INTO VIEW ============
+// This doesn't change CONTACTS permanently — just enriches display with pending bills
+function getUdhariMap() {
+  if (!APP_DATA) return {};
+  const map = {}; // phone -> [{bill_no, amount, date}]
+  (APP_DATA.bills || []).filter(b => b.status === 'pending').forEach(b => {
+    const key = b.phone || b.name;
+    if (!map[key]) map[key] = [];
+    map[key].push(b);
+  });
+  return map;
+}
+
+// ============ SYNC FROM APP ============
+async function syncFromApp() {
+  const res = document.getElementById('sync-result');
+  res.innerHTML = '<span style="color:var(--muted)">⏳ Loading...</span>';
+  
+  APP_DATA = await fbLoadMain();
+  if (!APP_DATA) { res.innerHTML = '<span class="text-red">⚠️ App data नहीं मिला</span>'; return; }
+  
+  const appCustomers = APP_DATA.customers || [];
+  const pendingBills = (APP_DATA.bills || []).filter(b => b.status === 'pending');
+  
+  let added = 0, updated = 0;
+  
+  // Import customers
+  appCustomers.forEach(c => {
+    const existing = CONTACTS.find(x => (c.phone && x.phone === c.phone) || x.name === c.name);
+    if (existing) {
+      // Update address/note if empty
+      if (!existing.address && c.address) { existing.address = c.address; updated++; }
+    } else {
+      CONTACTS.push({
+        id: uid(), name: c.name, phone: c.phone || '',
+        address: c.address || '', note: c.note || '',
+        vip: c.vip || false, source: 'app',
+        created: c.created || Date.now()
+      });
+      added++;
+    }
+  });
+  
+  // Import udhari people (those not already in contacts)
+  pendingBills.forEach(b => {
+    if (!b.phone) return;
+    const existing = CONTACTS.find(x => x.phone === b.phone);
+    if (!existing) {
+      CONTACTS.push({
+        id: uid(), name: b.name, phone: b.phone,
+        address: b.location || '', note: '',
+        vip: false, source: 'udhari',
+        created: Date.now()
+      });
+      added++;
+    }
+  });
+  
+  await fbSaveContacts(CONTACTS);
+  mergeUdhariIntoView();
+  renderContacts();
+  
+  res.innerHTML = `<span style="color:var(--green);background:#D8F3DC;padding:4px 8px;border-radius:6px">✅ ${added} नए जुड़े, ${updated} update हुए</span>`;
+  toast(`✅ ${added} contacts sync हुए`);
+}
+
+// ============ SYNC TO APP ============
+async function syncToApp() {
+  if (!APP_DATA) APP_DATA = await fbLoadMain();
+  if (!APP_DATA) { toast('⚠️ App data नहीं मिला'); return; }
+  
+  let added = 0;
+  CONTACTS.forEach(c => {
+    if (!c.phone) return;
+    const exists = (APP_DATA.customers || []).find(x => x.phone === c.phone);
+    if (!exists) {
+      if (!APP_DATA.customers) APP_DATA.customers = [];
+      APP_DATA.customers.push({
+        id: uid(), name: c.name, phone: c.phone,
+        address: c.address || '', note: c.note || '',
+        vip: c.vip || false, first_visit: toISO(), created: Date.now()
+      });
+      added++;
+    }
+  });
+  
+  await fbSaveMain(APP_DATA);
+  const res = document.getElementById('sync-result');
+  res.innerHTML = `<span style="color:var(--green);background:#D8F3DC;padding:4px 8px;border-radius:6px">✅ ${added} contacts App में जुड़े</span>`;
+  toast(`✅ ${added} App में sync हुए`);
+}
+
+// ============ RENDER ============
+function renderContacts() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+  const udhariMap = getUdhariMap();
+  
+  // Merge udhari-only people (not in contacts) as virtual entries
+  const udhariPeople = [];
+  if (APP_DATA) {
+    (APP_DATA.bills || []).filter(b => b.status === 'pending').forEach(b => {
+      const inContacts = CONTACTS.find(c =>
+        (b.phone && c.phone === b.phone) || c.name === b.name
+      );
+      if (!inContacts) {
+        udhariPeople.push({
+          id: 'udhari_' + b.id,
+          name: b.name, phone: b.phone || '',
+          address: b.location || '', vip: false,
+          source: 'udhari', _virtual: true
+        });
+      }
+    });
+  }
+  
+  let all = [...udhariPeople, ...CONTACTS];
+  // Deduplicate by phone
+  const seen = new Set();
+  all = all.filter(c => {
+    const key = c.phone || c.name;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  
+  // Filter
+  if (currentFilter === 'udhari') all = all.filter(c => getUdhariForContact(c, udhariMap).length > 0);
+  else if (currentFilter === 'vip') all = all.filter(c => c.vip);
+  else if (currentFilter === 'phone') all = all.filter(c => c.phone && c.phone.length === 10);
+  
+  // Search
+  if (q) {
+    all = all.filter(c =>
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.phone || '').includes(q) ||
+      (c.address || '').toLowerCase().includes(q)
+    );
+  }
+  
+  // Sort: udhari first, then VIP, then by name
+  all.sort((a, b) => {
+    const aU = getUdhariForContact(a, udhariMap).length > 0 ? 0 : 1;
+    const bU = getUdhariForContact(b, udhariMap).length > 0 ? 0 : 1;
+    if (aU !== bU) return aU - bU;
+    if (a.vip && !b.vip) return -1;
+    if (!a.vip && b.vip) return 1;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+  
+  // Stats
+  const withPhone = [...CONTACTS, ...udhariPeople.filter(u => u.phone)];
+  document.getElementById('st-total').textContent = all.length;
+  document.getElementById('st-udhari').textContent = all.filter(c => getUdhariForContact(c, udhariMap).length > 0).length;
+  document.getElementById('st-phone').textContent = all.filter(c => c.phone && c.phone.length === 10).length;
+  
+  const cont = document.getElementById('contacts-list');
+  if (!cont) return;
+  
+  if (all.length === 0) {
+    cont.innerHTML = `<div class="empty"><div class="big-icon">📞</div>${q ? '"'+q+'" नहीं मिला' : 'कोई contact नहीं — ऊपर से Add करें'}</div>`;
+    return;
+  }
+  
+  // Group: udhari first, then rest
+  const withUdhari = all.filter(c => getUdhariForContact(c, udhariMap).length > 0);
+  const withoutUdhari = all.filter(c => getUdhariForContact(c, udhariMap).length === 0);
+  
+  let html = '';
+  
+  if (withUdhari.length > 0) {
+    html += `<div class="sec-head">💰 उधारी बाकी (${withUdhari.length})</div>`;
+    html += withUdhari.map(c => renderCard(c, udhariMap)).join('');
+  }
+  
+  if (withoutUdhari.length > 0 && currentFilter !== 'udhari') {
+    if (withUdhari.length > 0) html += `<div class="sec-head">👤 सभी Contacts</div>`;
+    html += withoutUdhari.map(c => renderCard(c, udhariMap)).join('');
+  }
+  
+  cont.innerHTML = html;
+}
+
+function getUdhariForContact(contact, udhariMap) {
+  const byPhone = contact.phone ? (udhariMap[contact.phone] || []) : [];
+  const byName  = udhariMap[contact.name] || [];
+  const all = [...byPhone];
+  byName.forEach(b => { if (!all.find(x => x.id === b.id)) all.push(b); });
+  return all;
+}
+
+function renderCard(c, udhariMap) {
+  const udhariBills = getUdhariForContact(c, udhariMap);
+  const totalUdhari = udhariBills.reduce((s, b) => s + b.amount, 0);
+  const hasUdhari = udhariBills.length > 0;
+  
+  return `
+    <div class="contact ${hasUdhari ? 'has-udhari' : c.vip ? 'vip' : ''}">
+      <div class="contact-head">
+        <div style="flex:1;min-width:0">
+          <div class="contact-phone">${c.phone ? '📞 ' + esc(c.phone) : '📵 नं. नहीं'}</div>
+          <div class="contact-name">${esc(c.name)}</div>
+          ${c.address ? `<div class="contact-loc">📍 ${esc(c.address)}</div>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          ${hasUdhari ? `<span class="udhari-badge">₹${totalUdhari}</span>` : ''}
+          ${c.vip ? '<span class="tag tag-gold">⭐ VIP</span>' : ''}
+        </div>
+      </div>
+      
+      ${c.note ? `<div class="text-xs text-muted mt-1">📝 ${esc(c.note)}</div>` : ''}
+      
+      <div class="contact-actions">
+        ${c.phone ? `<button class="btn btn-green btn-xs" onclick="openWA('${c.id}','${esc(c.phone)}')">📲 WA</button>` : ''}
+        ${c.phone ? `<button class="btn btn-ghost btn-xs" onclick="callContact('${esc(c.phone)}')">📞 Call</button>` : ''}
+        ${hasUdhari ? `<button class="btn btn-xs" style="background:#FFD6D6;color:var(--red)" onclick="showUdhari('${c.id}','${esc(c.name)}')">💰 उधारी (${udhariBills.length})</button>` : ''}
+        ${!c._virtual ? `<button class="btn btn-ghost btn-xs" onclick="editContact('${c.id}')">✏️</button>` : ''}
+        ${!c._virtual ? `<button class="btn btn-ghost btn-xs" onclick="deleteContact('${c.id}')">🗑️</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ============ UDHARI DETAIL ============
+function showUdhari(contactId, name) {
+  const udhariMap = getUdhariMap();
+  const c = CONTACTS.find(x => x.id === contactId) || { name, phone: '' };
+  const bills = getUdhariForContact(c, udhariMap);
+  const total = bills.reduce((s, b) => s + b.amount, 0);
+  
+  document.getElementById('udhari-modal-title').textContent = `💰 ${c.name} — उधारी`;
+  
+  const content = document.getElementById('udhari-modal-content');
+  content.innerHTML = `
+    <div style="background:#FFD6D6;border-radius:10px;padding:12px;margin-bottom:12px;text-align:center">
+      <div style="font-size:11px;color:var(--red);font-weight:600;text-transform:uppercase">कुल उधारी</div>
+      <div style="font-size:26px;font-weight:700;color:var(--red);font-family:monospace">₹${total}</div>
+    </div>
+    
+    ${bills.map(b => `
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:13px;font-weight:600">बिल ${esc(b.bill_no || '-')}</div>
+            <div style="font-size:11px;color:var(--muted)">${dateStr(b.date)}</div>
+            ${b.items ? `<div style="font-size:11px;color:var(--soft);margin-top:2px">${esc(b.items.substring(0, 60))}${b.items.length > 60 ? '...' : ''}</div>` : ''}
+          </div>
+          <div style="font-size:16px;font-weight:700;color:var(--red);font-family:monospace">₹${b.amount}</div>
+        </div>
+        ${c.phone ? `
+        <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)">
+          <button class="btn btn-green btn-sm btn-block" onclick="sendUdhariWA('${b.id}','${esc(c.phone)}');closeUdhariModal()">📲 उधारी मैसेज भेजें</button>
+        </div>` : ''}
+      </div>
+    `).join('')}
+    
+    ${c.phone ? `
+    <button class="btn btn-block mt-2" onclick="window.location.href='tel:${esc(c.phone)}'">📞 Call करें (${esc(c.phone)})</button>` : ''}
+  `;
+  
+  document.getElementById('udhari-modal').classList.add('show');
+}
+
+function closeUdhariModal() {
+  document.getElementById('udhari-modal').classList.remove('show');
+}
+
+function sendUdhariWA(billId, phone) {
+  if (!APP_DATA) return;
+  const b = (APP_DATA.bills || []).find(x => x.id === billId);
+  if (!b) return;
+  
+  const settings = APP_DATA.settings || {};
+  const msg = `Jai Hind!
+
+Dear Valued Customer,
+
+We at Marwad Rasoi are truly grateful for your love,
+trust, and continued support. Serving you is our
+greatest honor.
+
+This is a polite reminder that the following amount
+is currently due against your account:
+
+------------------------------
+Bill Number  : ${b.bill_no || '-'}
+Amount Due   : Rs. ${b.amount}
+------------------------------
+
+We humbly request you to kindly clear this amount
+at your earliest convenience. Your prompt response
+helps us continue serving you with the same quality
+and dedication you deserve.
+
+PAYMENT DETAILS:
+UPI / PhonePe : ${settings.upi_phone || '6367183480'}
+UPI ID         : ${settings.upi_id || 'vikram3600@ibl'}
+
+After completing the payment, kindly share a
+screenshot for our records. Thank you!
+
+For any queries, feel free to reach us:
+Contact : ${settings.contact || '6367183480 / 8696283600'}
+
+You are not just our customer, you are part of the
+Marwad Rasoi family. We look forward to serving you
+again with the same warmth and flavors you love.
+
+Warm Regards,
+Marwad Rasoi Family
+"A Promise of Taste and Purity"
+Jai Hind! Jai Bharat!`;
+
+  window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  toast('📲 WhatsApp खुल रहा है');
+}
+
+// ============ CONTACT CRUD ============
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = '➕ नया Contact';
+  ['c-name','c-phone','c-address','c-note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('c-vip').checked = false;
+  document.getElementById('edit-id').value = '';
+  document.getElementById('add-modal').classList.add('show');
+}
+
+function editContact(id) {
+  const c = CONTACTS.find(x => x.id === id);
+  if (!c) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = '✏️ Contact Edit करें';
+  document.getElementById('c-name').value   = c.name || '';
+  document.getElementById('c-phone').value  = c.phone || '';
+  document.getElementById('c-address').value = c.address || '';
+  document.getElementById('c-note').value   = c.note || '';
+  document.getElementById('c-vip').checked  = c.vip || false;
+  document.getElementById('edit-id').value  = id;
+  document.getElementById('add-modal').classList.add('show');
+}
+
+async function saveContact() {
+  const name    = document.getElementById('c-name').value.trim();
+  const phone   = document.getElementById('c-phone').value.trim();
+  const address = document.getElementById('c-address').value.trim();
+  const note    = document.getElementById('c-note').value.trim();
+  const vip     = document.getElementById('c-vip').checked;
+  const id      = document.getElementById('edit-id').value;
+  
+  if (!name) { toast('⚠️ नाम भरें'); return; }
+  if (phone && phone.length !== 10) { toast('⚠️ 10 अंकों का फोन'); return; }
+  if (phone && !id && CONTACTS.find(c => c.phone === phone)) { toast('⚠️ यह नंबर पहले से है'); return; }
+  
+  if (id) {
+    const idx = CONTACTS.findIndex(c => c.id === id);
+    if (idx >= 0) CONTACTS[idx] = { ...CONTACTS[idx], name, phone, address, note, vip };
+  } else {
+    CONTACTS.push({ id: uid(), name, phone, address, note, vip, source: 'manual', created: Date.now() });
+  }
+  
+  await fbSaveContacts(CONTACTS);
+  closeModal();
+  renderContacts();
+  toast(id ? '✅ Updated' : '✅ Contact जुड़ा');
+}
+
+async function deleteContact(id) {
+  if (!confirm('Contact मिटाएं?')) return;
+  CONTACTS = CONTACTS.filter(c => c.id !== id);
+  await fbSaveContacts(CONTACTS);
+  renderContacts();
+  toast('🗑️ मिटा दिया');
+}
+
+function closeModal() {
+  document.getElementById('add-modal').classList.remove('show');
+}
+
+// ============ ACTIONS ============
+function openWA(contactId, phone) {
+  // Check for udhari first
+  const udhariMap = getUdhariMap();
+  const c = CONTACTS.find(x => x.id === contactId);
+  if (c) {
+    const bills = getUdhariForContact(c, udhariMap);
+    if (bills.length > 0) {
+      showUdhari(contactId, c.name);
+      return;
+    }
+  }
+  // No udhari — open WA directly
+  window.open(`https://wa.me/91${phone}`, '_blank');
+}
+
+function callContact(phone) {
+  window.location.href = `tel:${phone}`;
+}
+
+// ============ CSV IMPORT ============
+async function importCSV() {
+  const f = document.getElementById('csv-file').files[0];
+  if (!f) { toast('⚠️ फाइल चुनें'); return; }
+  
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const rows = parseCSV(e.target.result);
+    if (rows.length < 2) { toast('⚠️ खाली फाइल'); return; }
+    
+    const header = rows[0].map(h => h.toLowerCase().trim());
+    const nameIdx  = header.findIndex(h => h.includes('name') || h.includes('नाम') || h === 'display name');
+    const phoneIdx = header.findIndex(h => h.includes('phone') || h.includes('mobile') || h.includes('फोन') || h.includes('number'));
+    const addrIdx  = header.findIndex(h => h.includes('address') || h.includes('पता') || h.includes('location'));
+    
+    let added = 0, skipped = 0;
+    rows.slice(1).forEach(r => {
+      const name  = nameIdx  >= 0 ? (r[nameIdx]  || '').trim() : '';
+      const rawPh = phoneIdx >= 0 ? (r[phoneIdx] || '') : '';
+      const phone = rawPh.replace(/\D/g, '').slice(-10);
+      const addr  = addrIdx  >= 0 ? (r[addrIdx]  || '').trim() : '';
+      
+      if (!name && !phone) return;
+      if (phone.length === 10 && CONTACTS.find(c => c.phone === phone)) { skipped++; return; }
+      
+      CONTACTS.push({
+        id: uid(), name: name || phone, phone,
+        address: addr, note: '', vip: false,
+        source: 'csv', created: Date.now()
+      });
+      added++;
+    });
+    
+    await fbSaveContacts(CONTACTS);
+    renderContacts();
+    
+    const res = document.getElementById('import-result');
+    res.innerHTML = `<span style="color:var(--green);background:#D8F3DC;padding:4px 8px;border-radius:6px">✅ ${added} जुड़े${skipped > 0 ? `, ${skipped} already थे` : ''}. कुल: ${CONTACTS.length}</span>`;
+    toast(`✅ ${added} contacts import हुए`);
+  };
+  reader.readAsText(f);
+}
+
+// ============ FILTER ============
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('[data-f]').forEach(p => p.classList.toggle('active', p.dataset.f === f));
+  renderContacts();
+}
+
+// ============ UTILITIES ============
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function toISO() { return new Date().toISOString().slice(0, 10); }
+function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function dateStr(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${day} ${months[parseInt(m)-1]} ${y}`;
+}
+
+function parseCSV(text) {
+  const rows = [];
+  const lines = text.split('\n');
+  lines.forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    cols.push(cur.trim());
+    rows.push(cols);
+  });
+  return rows;
+}
+
+function mergeUdhariIntoView() {
+  // No-op: udhari people show in render via getUdhariMap()
+  // This triggers re-render when app data updates
+  if (document.getElementById('contacts-list').style.display !== 'none') {
+    renderContacts();
+  }
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Close modal on backdrop click
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => {
+    if (e.target === bg) {
+      bg.classList.remove('show');
+    }
+  });
+});
+</script>
+</body>
+</html>
