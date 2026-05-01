@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#C04000">
+<title>🔍 यूनिवर्सल सर्च — मारवाड़ रसोई</title>
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --saffron:#E85D04;
+  --deep-saffron:#C04000;
+  --cream:#FFF8E7;
+  --warm-bg:#FDF6E3;
+  --ink:#2B1810;
+  --soft-ink:#5C3A21;
+  --muted:#8a7158;
+  --gold:#D4A017;
+  --green:#2D6A4F;
+  --red:#9D0208;
+  --blue:#1d4e89;
+  --border:#E6D5B8;
+  --shadow:rgba(80,40,10,0.10);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{
+  font-family:'Inter','Segoe UI',sans-serif;
+  background:var(--warm-bg);
+  color:var(--ink);
+  min-height:100vh;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+
+.header{
+  background:linear-gradient(135deg,var(--deep-saffron),var(--saffron));
+  color:var(--cream);
+  padding:12px 14px;
+  position:sticky;
+  top:0;
+  z-index:50;
+  box-shadow:0 2px 12px var(--shadow);
+}
+.header-row{display:flex;align-items:center;gap:10px}
+.back-btn{
+  width:36px;height:36px;
+  background:rgba(255,255,255,0.18);
+  border:1px solid rgba(255,255,255,0.3);
+  color:#fff;
+  border-radius:9px;
+  font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  flex-shrink:0;
+  text-decoration:none;
+}
+.title{
+  font-family:'Tiro Devanagari Hindi',serif;
+  font-size:18px;
+  flex:1;
+}
+
+.search-wrap{
+  position:sticky;
+  top:60px;
+  z-index:40;
+  background:var(--warm-bg);
+  padding:10px 12px;
+  border-bottom:1px solid var(--border);
+}
+.search-input{
+  width:100%;
+  padding:12px 14px;
+  font-size:15px;
+  background:#fff;
+  border:2px solid var(--gold);
+  border-radius:10px;
+  font-family:inherit;
+  color:var(--ink);
+}
+.search-input:focus{outline:none;border-color:var(--deep-saffron)}
+
+.tabs{
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  padding:8px 12px;
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex-shrink:0;
+  padding:6px 14px;
+  background:var(--cream);
+  border:1px solid var(--border);
+  border-radius:18px;
+  font-size:13px;
+  font-weight:500;
+  color:var(--soft-ink);
+  cursor:pointer;
+  white-space:nowrap;
+}
+.tab.active{
+  background:var(--deep-saffron);
+  color:#fff;
+  border-color:var(--deep-saffron);
+}
+
+.results{padding:10px 12px 80px}
+.empty{
+  text-align:center;
+  padding:60px 12px;
+  color:var(--muted);
+}
+.empty .ic{font-size:50px;margin-bottom:10px;display:block}
+
+.section-title{
+  font-size:11px;
+  font-weight:700;
+  color:var(--deep-saffron);
+  text-transform:uppercase;
+  letter-spacing:0.6px;
+  margin:14px 0 6px;
+  padding:0 2px;
+}
+.section-title:first-child{margin-top:4px}
+
+.result{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:11px 12px;
+  margin-bottom:6px;
+  cursor:pointer;
+  transition:transform 0.1s;
+}
+.result:active{transform:scale(0.99);background:var(--cream)}
+.r-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:8px;
+}
+.r-title{
+  font-size:14px;
+  font-weight:600;
+  line-height:1.3;
+}
+.r-meta{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:3px;
+  line-height:1.3;
+}
+.r-amt{
+  font-size:14px;
+  font-weight:700;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.result-btn{
+  border:none;
+  border-radius:8px;
+  padding:7px 10px;
+  font-size:11px;
+  font-weight:600;
+  cursor:pointer;
+  transition:transform 0.1s, opacity 0.15s;
+  flex:1;
+  min-width:90px;
+  text-align:center;
+}
+.result-btn:active{transform:scale(0.95);opacity:0.85}
+.quick-chip{
+  border:none;
+  border-radius:18px;
+  padding:6px 12px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  white-space:nowrap;
+  flex-shrink:0;
+  transition:transform 0.1s;
+}
+.quick-chip:active{transform:scale(0.95)}
+.tag{
+  display:inline-block;
+  padding:1px 8px;
+  border-radius:10px;
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+  margin-right:5px;
+  vertical-align:middle;
+}
+.t-cust{background:#FEF3C7;color:#92400E}
+.t-bill{background:#FEE2E2;color:#991B1B}
+.t-bill.paid{background:#D1FAE5;color:#065F46}
+.t-item{background:#DBEAFE;color:#1E40AF}
+.t-menu{background:#FCE7F3;color:#9F1239}
+.t-vendor{background:#E0E7FF;color:#3730A3}
+.t-staff{background:#D1FAE5;color:#065F46}
+mark{
+  background:#FEF08A;
+  color:var(--ink);
+  padding:0 2px;
+  border-radius:2px;
+  font-weight:700;
+}
+.notice{
+  background:#FEF3C7;
+  border:1px solid #FCD34D;
+  border-radius:8px;
+  padding:10px 12px;
+  margin:10px 12px;
+  font-size:13px;
+  color:#78350F;
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-row">
+    <a href="index.html" class="back-btn">←</a>
+    <div class="title">🔍 यूनिवर्सल सर्च</div>
+  </div>
+</header>
+
+<div class="search-wrap">
+  <input type="text" class="search-input" id="q" placeholder="कुछ भी खोजें... (नाम, फोन, बिल नं., आइटम)" autocomplete="off" autofocus>
+</div>
+
+<!-- Quick chips for fast access -->
+<div style="display:flex;gap:6px;padding:0 14px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch">
+  <button class="quick-chip" onclick="quickFill('pending')" style="background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5">🔴 सब उधारी</button>
+  <button class="quick-chip" onclick="quickFill('today')" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D">📅 आज के बिल</button>
+  <button class="quick-chip" onclick="quickFill('reminder')" style="background:#F3E8FF;color:#6B21A8;border:1px solid #D8B4FE">🔔 रिमाइंडर भेजे</button>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-f="all">सभी</button>
+  <button class="tab" data-f="customer">👤 ग्राहक</button>
+  <button class="tab" data-f="bill">📄 बिल</button>
+  <button class="tab" data-f="item">📚 आइटम</button>
+  <button class="tab" data-f="menu">🍽️ मेनू</button>
+  <button class="tab" data-f="vendor">🏪 वेंडर</button>
+  <button class="tab" data-f="staff">👥 स्टाफ</button>
+</div>
+
+<div id="results" class="results"></div>
+
+<script>
+let DB = {bills:[],customers:[],master_items:[],menu_items:[],vendors:[],staff:[],purchases:[],settings:{}};
+let curFilter = 'all';
+
+function loadDB(){
+  try{
+    const d = localStorage.getItem('marwar_data');
+    if(d){
+      const parsed = JSON.parse(d);
+      DB = {...DB, ...parsed};
+    }
+  }catch(e){console.error('Load failed', e)}
+}
+
+function escapeHtml(s){
+  if(s==null) return '';
+  return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function fmt(n){
+  if(n==null||isNaN(n)) return '₹0';
+  const v = Math.round(parseFloat(n));
+  return '₹' + v.toLocaleString('en-IN');
+}
+function highlight(text, q){
+  if(!q || !text) return escapeHtml(text||'');
+  const safe = escapeHtml(text);
+  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+  return safe.replace(re, '<mark>$1</mark>');
+}
+
+function calcVendorBalance(id){
+  // Best effort — if exact algo unknown, sum purchases minus payments
+  const purch = (DB.purchases||[]).filter(p=>p.vendor_id===id).reduce((s,p)=>s+(p.amount||0),0);
+  const paid = (DB.vendor_payments||[]).filter(p=>p.vendor_id===id).reduce((s,p)=>s+(p.amount||0),0);
+  return purch - paid;
+}
+
+function setFilter(f){
+  curFilter = f;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.f===f));
+  render();
+}
+
+// Bill card को render करने वाला reusable helper
+function renderBillCard(b, q){
+  q = (q||'').toLowerCase();
+  const isPaid = b.status==='paid';
+  const itemsLine = b.items ? b.items.split('\n').slice(0,2).join(' • ') : '';
+  return `
+    <div class="result" onclick="goToBill('${b.name||''}')">
+      <div class="r-head">
+        <div style="flex:1;min-width:0">
+          <div class="r-title">
+            <span class="tag t-bill ${isPaid?'paid':''}">${isPaid?'चुकता':'पेंडिंग'}</span>
+            ${b.bill_no?`<span style="font-family:monospace;font-weight:700;color:var(--ink)">#${highlight(b.bill_no, q)}</span> `:''}
+            ${highlight(b.name||'-', q)}
+          </div>
+          <div class="r-meta">📅 ${b.date||''}${b.time?` • ⏱️ ${b.time}`:''}${b.phone?` • 📞 ${highlight(b.phone, q)}`:''}${b.location?` • 📍 ${highlight(b.location, q)}`:''}</div>
+          ${itemsLine?`<div class="r-meta" style="color:var(--blue);margin-top:3px">🍽️ ${highlight(itemsLine, q)}</div>`:''}
+          ${b.reminder_count>0?`<div class="r-meta" style="color:#8B4513;margin-top:3px;font-weight:600">🔔 ${b.reminder_count} रिमाइंडर भेजे जा चुके</div>`:''}
+        </div>
+        <div class="r-amt mono" style="color:${isPaid?'var(--green)':'var(--red)'}">${fmt(b.amount)}</div>
+      </div>
+      ${!isPaid && b.phone?`
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap" onclick="event.stopPropagation()">
+          <button class="result-btn" style="background:#25D366;color:white" onclick="quickWA('${b.id}','first')">📱 पहला रिमाइंडर</button>
+          <button class="result-btn" style="background:#9333EA;color:white" onclick="quickWA('${b.id}','second')">🌟 दूसरा रिमाइंडर</button>
+          <button class="result-btn" style="background:var(--green);color:white" onclick="goToBill('${b.name||''}')">✓ बिल खोलें</button>
+        </div>
+      `:!isPaid?`
+        <div style="display:flex;gap:6px;margin-top:8px" onclick="event.stopPropagation()">
+          <button class="result-btn" style="background:var(--saffron);color:white" onclick="goToBill('${b.name||''}')">⚠️ फोन जोड़ें</button>
+        </div>
+      `:''}
+    </div>`;
+}
+
+let quickMode = ''; // '', 'pending', 'today', 'reminder'
+
+function quickFill(mode){
+  // Toggle - अगर पहले से उसी mode पर हैं तो clear करो
+  if(quickMode === mode){
+    quickMode = '';
+    document.getElementById('q').value = '';
+  } else {
+    quickMode = mode;
+    document.getElementById('q').value = '';
+  }
+  
+  // Visual feedback
+  document.querySelectorAll('.quick-chip').forEach(btn=>{
+    btn.style.outline = '';
+  });
+  if(quickMode){
+    event.target.style.outline = '3px solid #1d4e89';
+  }
+  
+  render();
+}
+
+function render(){
+  const q = (document.getElementById('q').value||'').trim().toLowerCase();
+  const cont = document.getElementById('results');
+  
+  // अगर text empty है और कोई quick mode भी नहीं तो welcome screen
+  if(!q && !quickMode){
+    const totalPending = (DB.bills||[]).filter(b=>b.status==='pending').length;
+    const totalPendingAmt = (DB.bills||[]).filter(b=>b.status==='pending').reduce((s,b)=>s+(b.amount||0),0);
+    cont.innerHTML = `
+      <div class="empty">
+        <span class="ic">🔎</span>
+        <div>ऊपर टाइप करें — हर जगह से रिज़ल्ट</div>
+        <div style="font-size:12px;margin-top:8px;opacity:0.7">📞 फोन • 🏷️ नाम • 🔢 बिल नं. • 📦 आइटम</div>
+        ${totalPending>0?`<div style="font-size:13px;margin-top:14px;color:var(--red);font-weight:600">🔴 ${totalPending} पेंडिंग बिल — कुल ₹${totalPendingAmt}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">ऊपर "🔴 सब उधारी" चिप दबाएँ</div>`:''}
+        <div style="font-size:12px;margin-top:14px;color:var(--green)">
+          📊 कुल डेटा: ${(DB.customers||[]).length} ग्राहक • ${(DB.bills||[]).length} बिल • ${(DB.master_items||[]).length} आइटम
+        </div>
+      </div>`;
+    return;
+  }
+  
+  const sec = [];
+  
+  // 🚀 QUICK MODES - बिना search type किए directly results
+  if(quickMode && !q){
+    let bills = [];
+    let title = '';
+    
+    if(quickMode === 'pending'){
+      bills = (DB.bills||[]).filter(b=>b.status==='pending').sort((a,b)=>(b.created||0)-(a.created||0));
+      const total = bills.reduce((s,b)=>s+(b.amount||0),0);
+      title = `🔴 सभी पेंडिंग बिल (${bills.length}) — कुल ₹${total}`;
+    } else if(quickMode === 'today'){
+      const today = new Date().toISOString().split('T')[0];
+      bills = (DB.bills||[]).filter(b=>b.date===today).sort((a,b)=>(b.created||0)-(a.created||0));
+      title = `📅 आज के बिल (${bills.length})`;
+    } else if(quickMode === 'reminder'){
+      bills = (DB.bills||[]).filter(b=>b.status==='pending' && (b.reminder_count||0)>0).sort((a,b)=>(b.last_reminder_at||0)-(a.last_reminder_at||0));
+      title = `🔔 रिमाइंडर भेजे गए बिल (${bills.length})`;
+    }
+    
+    if(bills.length===0){
+      cont.innerHTML = `<div class="empty"><span class="ic">✨</span><div>${quickMode==='pending'?'कोई पेंडिंग बिल नहीं':'कुछ नहीं मिला'}</div></div>`;
+      return;
+    }
+    
+    sec.push({
+      title: title,
+      html: bills.slice(0,30).map(b=>renderBillCard(b, '')).join('') + (bills.length>30?`<div class="text-sm text-muted" style="text-align:center;padding:8px">और ${bills.length-30} बिल हैं...</div>`:'')
+    });
+    
+    cont.innerHTML = sec.map(s=>`<div class="sec-title">${s.title}</div>${s.html}`).join('');
+    return;
+  }
+  
+  if(curFilter==='all' || curFilter==='customer'){
+    const m = (DB.customers||[]).filter(c=>
+      (c.name||'').toLowerCase().includes(q) ||
+      (c.phone||'').includes(q) ||
+      (c.address||'').toLowerCase().includes(q) ||
+      (c.note||'').toLowerCase().includes(q)
+    ).slice(0,20);
+    if(m.length){
+      sec.push({title:`👤 ग्राहक (${m.length})`, html: m.map(c=>{
+        // इस customer की pending उधारी निकालो
+        const custPending = (DB.bills||[]).filter(b=>
+          b.status==='pending' && (
+            (c.phone && b.phone===c.phone) ||
+            (b.name||'').toLowerCase()===(c.name||'').toLowerCase()
+          )
+        );
+        const totalUdhari = custPending.reduce((s,b)=>s+(b.amount||0),0);
+        return `
+        <div class="result" onclick="goToCustomer('${c.id}')">
+          <div class="r-head">
+            <div style="flex:1;min-width:0">
+              <div class="r-title"><span class="tag t-cust">ग्राहक</span>${c.vip?'⭐ ':''}${highlight(c.name, q)}</div>
+              <div class="r-meta">${c.phone?`📞 ${highlight(c.phone, q)}`:'<span style="color:var(--red)">फोन नहीं</span>'}${c.address?` • 📍 ${highlight(c.address, q)}`:''}</div>
+              ${custPending.length>0?`<div class="r-meta" style="color:var(--red);margin-top:3px;font-weight:600">💰 उधारी: ₹${totalUdhari} (${custPending.length} बिल)</div>`:''}
+            </div>
+            <div style="font-size:18px">💬</div>
+          </div>
+        </div>`;
+      }).join('')});
+    }
+  }
+  
+  if(curFilter==='all' || curFilter==='bill'){
+    const allMatches = (DB.bills||[]).filter(b=>{
+      // Bill number में dash/space हटाकर भी match करो (B-4 = B4 = b 4)
+      const billNoNorm = (b.bill_no||'').toString().toLowerCase().replace(/[\s\-_]/g,'');
+      const qNorm = q.replace(/[\s\-_]/g,'');
+      
+      return (b.name||'').toLowerCase().includes(q) ||
+        (b.phone||'').includes(q) ||
+        (b.items||'').toLowerCase().includes(q) ||
+        (b.location||'').toLowerCase().includes(q) ||
+        (b.bill_no||'').toString().toLowerCase().includes(q) ||
+        billNoNorm.includes(qNorm) ||  // smart bill no match
+        (b.note||'').toLowerCase().includes(q) ||
+        (b.amount||'').toString().includes(q);
+    });
+    
+    // Pending और Paid को अलग करो
+    const pendingMatches = allMatches.filter(b=>b.status==='pending').sort((a,b)=>(b.created||0)-(a.created||0));
+    const paidMatches = allMatches.filter(b=>b.status==='paid').sort((a,b)=>(b.created||0)-(a.created||0)).slice(0,10);
+    
+    // Pending पहले (सबसे ऊपर) - urgency के साथ
+    if(pendingMatches.length){
+      const totalPending = pendingMatches.reduce((s,b)=>s+(b.amount||0),0);
+      sec.push({
+        title:`🔴 पेंडिंग बिल (${pendingMatches.length}) — कुल ₹${totalPending}`,
+        html: pendingMatches.slice(0,15).map(b=>renderBillCard(b, q)).join('') + (pendingMatches.length>15?`<div class="text-sm text-muted" style="text-align:center;padding:8px">और ${pendingMatches.length-15} पेंडिंग बिल हैं...</div>`:'')
+      });
+    }
+    
+    // Paid बाद में
+    if(paidMatches.length){
+      sec.push({
+        title:`✅ चुकता बिल (${paidMatches.length})`,
+        html: paidMatches.map(b=>renderBillCard(b, q)).join('')
+      });
+    }
+  }
+  
+  if(curFilter==='all' || curFilter==='item'){
+    const m = (DB.master_items||[]).filter(x=>
+      (x.name||'').toLowerCase().includes(q) ||
+      (x.category||'').toLowerCase().includes(q)
+    ).slice(0,20);
+    if(m.length){
+      sec.push({title:`📚 आइटम लिस्ट (${m.length})`, html: m.map(x=>`
+        <div class="result" onclick="goToTab('purchase')">
+          <div class="r-head">
+            <div style="flex:1;min-width:0">
+              <div class="r-title"><span class="tag t-item">आइटम</span>${highlight(x.name, q)}</div>
+              <div class="r-meta">${x.category||''} • ${x.unit||''}</div>
+            </div>
+            <div class="r-amt mono">${x.last_price>0?fmt(x.last_price):'—'}</div>
+          </div>
+        </div>`).join('')});
+    }
+  }
+  
+  if(curFilter==='all' || curFilter==='menu'){
+    const m = (DB.menu_items||[]).filter(x=>
+      (x.name||'').toLowerCase().includes(q) ||
+      (x.category||'').toLowerCase().includes(q)
+    ).slice(0,20);
+    if(m.length){
+      sec.push({title:`🍽️ मेनू (${m.length})`, html: m.map(x=>`
+        <div class="result" onclick="goToTab('sales')">
+          <div class="r-head">
+            <div style="flex:1;min-width:0">
+              <div class="r-title"><span class="tag t-menu">मेनू</span>${x.special?'⭐ ':''}${highlight(x.name, q)}</div>
+              <div class="r-meta">${x.category||''}</div>
+            </div>
+            <div class="r-amt mono">${x.price>0?fmt(x.price):'MRP'}</div>
+          </div>
+        </div>`).join('')});
+    }
+  }
+  
+  if(curFilter==='all' || curFilter==='vendor'){
+    const m = (DB.vendors||[]).filter(v=>
+      (v.name||'').toLowerCase().includes(q) ||
+      (v.phone||'').includes(q) ||
+      (v.address||'').toLowerCase().includes(q)
+    ).slice(0,20);
+    if(m.length){
+      sec.push({title:`🏪 विक्रेता (${m.length})`, html: m.map(v=>{
+        const bal = calcVendorBalance(v.id);
+        return `
+          <div class="result" onclick="goToTab('purchase')">
+            <div class="r-head">
+              <div style="flex:1;min-width:0">
+                <div class="r-title"><span class="tag t-vendor">वेंडर</span>${highlight(v.name, q)}</div>
+                <div class="r-meta">${v.phone?`📞 ${highlight(v.phone, q)}`:''}${v.address?` • ${highlight(v.address, q)}`:''}</div>
+              </div>
+              <div class="r-amt mono" style="color:${bal>0?'var(--red)':'var(--green)'}">${fmt(bal)}</div>
+            </div>
+          </div>`;
+      }).join('')});
+    }
+  }
+  
+  if(curFilter==='all' || curFilter==='staff'){
+    const m = (DB.staff||[]).filter(s=>
+      (s.name||'').toLowerCase().includes(q) ||
+      (s.phone||'').includes(q) ||
+      (s.role||'').toLowerCase().includes(q)
+    ).slice(0,20);
+    if(m.length){
+      sec.push({title:`👥 स्टाफ (${m.length})`, html: m.map(s=>`
+        <div class="result" onclick="goToTab('staff')">
+          <div class="r-head">
+            <div style="flex:1;min-width:0">
+              <div class="r-title"><span class="tag t-staff">स्टाफ</span>${highlight(s.name, q)}</div>
+              <div class="r-meta">${s.role||''}${s.phone?` • 📞 ${highlight(s.phone, q)}`:''}${s.salary?` • वेतन ₹${s.salary}`:''}</div>
+            </div>
+            <div style="font-size:14px">${s.active?'✅':'⏸️'}</div>
+          </div>
+        </div>`).join('')});
+    }
+  }
+  
+  if(sec.length===0){
+    cont.innerHTML = `<div class="empty"><span class="ic">😕</span><div>"${escapeHtml(q)}" के लिए कुछ नहीं मिला</div></div>`;
+    return;
+  }
+  cont.innerHTML = sec.map(s=>`<div class="section-title">${s.title}</div>${s.html}`).join('');
+}
+
+function goToCustomer(id){
+  // Pass intent via sessionStorage so main app can pick it up
+  sessionStorage.setItem('marwar_intent', JSON.stringify({type:'open_customer_msg', id}));
+  window.location.href = 'index.html';
+}
+function goToBill(name){
+  sessionStorage.setItem('marwar_intent', JSON.stringify({type:'goto_bill', search:name}));
+  window.location.href = 'index.html';
+}
+function goToTab(tab){
+  sessionStorage.setItem('marwar_intent', JSON.stringify({type:'goto_tab', tab}));
+  window.location.href = 'index.html';
+}
+
+// Helper to format date in Hindi
+function dateStrFull(d){
+  if(!d) return '-';
+  try{
+    const dt = new Date(d);
+    if(isNaN(dt)) return d;
+    return dt.toLocaleDateString('hi-IN',{day:'2-digit',month:'long',year:'numeric'});
+  }catch(e){ return d; }
+}
+
+// Toast helper for search page
+function toast(msg){
+  let t = document.getElementById('search-toast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'search-toast';
+    t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2B1810;color:#FFF8E7;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);transition:opacity 0.3s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>{ t.style.opacity = '0'; }, 2000);
+}
+
+// 📱 Direct WhatsApp from search results (बिना main app खोले)
+function quickWA(billId, reminderType){
+  const b = (DB.bills||[]).find(x=>x.id===billId);
+  if(!b){ toast('⚠️ बिल नहीं मिला'); return; }
+  if(!b.phone){ toast('⚠️ फोन नंबर नहीं है'); return; }
+  
+  const s = DB.settings || {};
+  const billDateStr = b.date ? dateStrFull(b.date) : '-';
+  const billTime = b.time || '-';
+  const itemsBlock = b.items ? b.items.split('\n').filter(x=>x.trim()).map(x=>'  • '+x.trim()).join('\n') : '  • (आइटम दर्ज नहीं)';
+  
+  let msg;
+  if(reminderType === 'second'){
+    // 🌟 दूसरा रिमाइंडर - मोटिवेशनल
+    let daysAgo = '';
+    if(b.date){
+      try{
+        const billDate = new Date(b.date);
+        const today = new Date();
+        const diffDays = Math.floor((today - billDate) / (1000*60*60*24));
+        if(diffDays > 0) daysAgo = `(लगभग ${diffDays} दिन पुराना)`;
+      }catch(e){}
+    }
+    
+    msg = `Jai Hind! 🙏🇮🇳
+
+आदरणीय ${b.name||'श्रीमान'} साहब जी,
+
+🌸 *सादर प्रणाम* 🌸
+
+आशा करते हैं आप और आपका परिवार सकुशल और स्वस्थ होंगे। 🙏
+
+श्रीमान जी, हमने आपको पहले भी एक छोटा सा रिमाइंडर भेजा था, परंतु शायद आप व्यस्त होंगे और हमारा विनम्र निवेदन आपकी नज़रों से चूक गया होगा - यह बहुत स्वाभाविक है। 😊
+
+आज एक बार फिर आपकी सेवा में *बड़ी विनम्रता के साथ* एक छोटा सा निवेदन प्रस्तुत है:
+
+══════════════════════════════
+📋 *आपके बिल का विवरण:*
+
+Bill Number   : ${b.bill_no||'-'}
+Date          : ${billDateStr} ${daysAgo}
+Time          : ${billTime}
+${b.location?'Delivered To  : '+b.location+'\n':''}${b.phone?'Your Mobile   : '+b.phone+'\n':''}*राशि देय     : ₹${b.amount}/-*
+══════════════════════════════
+${b.items?'\n🍽️ *आपने मंगवाया था:*\n'+itemsBlock+'\n══════════════════════════════\n':''}
+
+🌟 श्रीमान जी, यदि आप अपनी सुविधानुसार यह राशि चुका दें तो आपकी *बहुत बड़ी मेहरबानी* होगी। 🙏
+
+✨ आप जैसे सम्मानित ग्राहकों के सहयोग से ही हमारी छोटी सी रसोई दिन-प्रतिदिन आगे बढ़ रही है।
+
+💝 हम आपके आभारी हैं कि आपने हमारी रसोई पर भरोसा किया।
+
+══════════════════════════════
+💳 *भुगतान विकल्प (आपकी सुविधा अनुसार):*
+
+📱 UPI / PhonePe : ${s.upi_phone||'6367183480'}
+📱 UPI ID        : ${s.upi_id||'vikram3600@ibl'}
+══════════════════════════════
+
+🤝 कोई समस्या हो तो बेझिझक कॉल करें।
+📞 ${s.contact||'6367183480 / 8696283600'}
+
+🌹 आप *मारवाड़ रसोई परिवार* के अनमोल सदस्य हैं।
+
+सादर अभिवादन,
+*मारवाड़ रसोई परिवार* 🙏
+
+जय हिंद! जय भारत! 🇮🇳
+जय श्री राम! 🚩`;
+  } else {
+    // पहला रिमाइंडर
+    const phoneLine = b.phone ? `Your Mobile   : ${b.phone}` : '';
+    const locationLine = b.location ? `Delivered To  : ${b.location}` : '';
+    
+    msg = `Jai Hind! 🙏
+
+Dear ${b.name||'Customer'} Saa,
+
+We at *Marwad Rasoi* are truly grateful for your love, trust, and continued support.
+
+This is a polite reminder that the following amount is currently due against your account:
+
+------------------------------
+Bill Number   : ${b.bill_no||'-'}
+Date          : ${billDateStr}
+Time          : ${billTime}
+${phoneLine?phoneLine+'\n':''}${locationLine?locationLine+'\n':''}Amount Due    : Rs. ${b.amount}/-
+------------------------------
+
+🍽️ *Items Ordered:*
+${itemsBlock}
+------------------------------
+
+We humbly request you to kindly clear this amount at your earliest convenience.
+
+💳 *PAYMENT DETAILS:*
+UPI / PhonePe : ${s.upi_phone||'6367183480'}
+UPI ID        : ${s.upi_id||'vikram3600@ibl'}
+
+After payment, kindly share a screenshot.
+
+Contact : ${s.contact||'6367183480 / 8696283600'}
+
+Warm Regards,
+*Marwad Rasoi Family*
+"A Promise of Taste and Purity"
+Jai Hind! 🇮🇳`;
+  }
+  
+  // Reminder count बढ़ाओ और localStorage में save करो (index.html भी पढ़ेगा)
+  b.reminder_count = (b.reminder_count||0) + 1;
+  b.last_reminder_at = Date.now();
+  try{
+    localStorage.setItem('marwar_data', JSON.stringify(DB));
+  }catch(e){console.error('save failed',e)}
+  
+  const phone = (b.phone||'').replace(/[^0-9]/g,'');
+  const intlPhone = phone.startsWith('91')?phone:'91'+phone;
+  window.open('https://wa.me/'+intlPhone+'?text='+encodeURIComponent(msg),'_blank');
+  
+  toast(reminderType==='second' ? '🌟 दूसरा रिमाइंडर भेजा' : '📱 पहला रिमाइंडर भेजा');
+  
+  // Re-render to show updated reminder count
+  setTimeout(()=>render(), 500);
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  loadDB();
+  document.getElementById('q').addEventListener('input', ()=>{
+    // जब user type करना शुरू करे तो quick mode बंद कर दो
+    if(quickMode){
+      quickMode = '';
+      document.querySelectorAll('.quick-chip').forEach(btn=>{ btn.style.outline=''; });
+    }
+    render();
+  });
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click', ()=>setFilter(t.dataset.f));
+  });
+  render();
+});
+</script>
+</body>
+</html>
